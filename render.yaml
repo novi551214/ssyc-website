@@ -1,0 +1,68 @@
+# Render Blueprint — deploy the full SSYC app (Express backend + static
+# frontend served by Express) as a single Web Service.
+#
+# Usage: Render Dashboard → New → Blueprint → connect this repo. Render will
+# read this file automatically. After first deploy, open the Shell tab and
+# run `npm run seed:admin` once to create your admin login.
+#
+# All values in `envVars` marked sync: false must be filled in manually in
+# the Render dashboard (Environment tab) — never commit real secrets here.
+
+services:
+  - type: web
+    name: ssyc-website
+    runtime: node
+    plan: free
+    branch: main
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: CLIENT_URL
+        sync: false   # set to your live Render URL, e.g. https://ssyc-website.onrender.com
+      - key: MONGODB_URI
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_FRIEND
+        sync: false
+      - key: STRIPE_PRICE_SUPPORTER
+        sync: false
+      - key: STRIPE_PRICE_PATRON
+        sync: false
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_MODE
+        value: sandbox
+      - key: MAILCHIMP_API_KEY
+        sync: false
+      - key: MAILCHIMP_SERVER_PREFIX
+        sync: false
+      - key: MAILCHIMP_AUDIENCE_ID
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: ADMIN_NOTIFICATION_EMAIL
+        sync: false

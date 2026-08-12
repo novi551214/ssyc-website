@@ -86,21 +86,51 @@ stripe listen --forward-to localhost:5000/api/support/webhook
 ```
 Copy the `whsec_...` value it prints into `STRIPE_WEBHOOK_SECRET` in `.env`.
 
-## 4. Deployment
+## 4. Push this repo to GitHub
 
-### Option A — Single deployment (simplest)
+This project is already a git repo with an initial commit. To push it to your
+own GitHub account:
+
+```bash
+# 1. Create a new empty repository on GitHub (no README/license/.gitignore —
+#    this project already has them). e.g. https://github.com/new
+
+# 2. From inside this project folder:
+git remote add origin https://github.com/<your-username>/<your-repo-name>.git
+git push -u origin main
+```
+
+If GitHub asks for a password, use a
+[Personal Access Token](https://github.com/settings/tokens) instead (GitHub
+no longer accepts account passwords over HTTPS git). Or use SSH:
+`git remote add origin git@github.com:<your-username>/<your-repo-name>.git`.
+
+## 5. Deployment
+
+This repo includes ready-to-use config files:
+- **`render.yaml`** — a Render Blueprint for the backend (or the whole app).
+- **`netlify.toml`** — Netlify config for the static frontend, with an API
+  proxy rule pointing at your Render backend.
+
+### Option A — Single deployment on Render (simplest)
 Since Express already serves the static frontend, you can deploy this
 **entire repo as one service** to Render.com or Railway:
 
-**Render.com**
-1. Push this repo to GitHub.
-2. Render Dashboard → New → Web Service → connect your repo.
-3. Build command: `npm install`
-4. Start command: `npm start`
-5. Add all `.env` variables under the "Environment" tab (use your real
-   Stripe/PayPal/Mailchimp/Mongo values — set `CLIENT_URL` to your Render
-   URL, e.g. `https://ssyc.onrender.com`).
-6. Deploy. Then run the admin seed once via Render's Shell tab: `npm run seed:admin`.
+**Render.com (using the included Blueprint)**
+1. Push this repo to GitHub (see section 4 above).
+2. Render Dashboard → New → Blueprint → connect your repo. Render reads
+   `render.yaml` automatically and creates the web service.
+3. Fill in the environment variables Render prompts for (all the `sync: false`
+   ones in `render.yaml`) with your real Stripe/PayPal/Mailchimp/Mongo values
+   — set `CLIENT_URL` to your Render URL, e.g. `https://ssyc-website.onrender.com`.
+4. Deploy. Then run the admin seed once via Render's Shell tab: `npm run seed:admin`.
+
+**Render.com (manual, without the Blueprint)**
+1. Render Dashboard → New → Web Service → connect your repo.
+2. Build command: `npm install`
+3. Start command: `npm start`
+4. Add all `.env` variables under the "Environment" tab.
+5. Deploy, then run `npm run seed:admin` from the Shell tab.
 
 **Railway**
 1. Railway Dashboard → New Project → Deploy from GitHub repo.
@@ -108,20 +138,19 @@ Since Express already serves the static frontend, you can deploy this
 3. Add a MongoDB plugin, or keep using Atlas.
 4. Deploy, then run `npm run seed:admin` from Railway's shell.
 
-### Option B — Split frontend/backend
-If you'd rather host the frontend on Vercel/Netlify and the backend
-separately on Render/Railway:
+### Option B — Split frontend/backend (Netlify + Render, using the included configs)
+If you'd rather host the frontend on Netlify and the backend on Render:
 
-1. Deploy `server/` to Render/Railway as above (backend only needs the
-   `server/` folder + `package.json`).
-2. Deploy the `client/` folder to Vercel or Netlify as a static site.
-3. In `.env` on the backend, set `CLIENT_URL` to your Vercel/Netlify URL
-   (needed for CORS and for Stripe's success/cancel redirect URLs).
-4. In every `client/js/*.js` file, `API_BASE` currently defaults to
-   `window.location.origin`. If frontend and backend are on different
-   domains, change `API_BASE` in `client/js/main.js`, `support.js`,
-   `rsvp.js`, and `contact.js` to your backend's full URL instead, e.g.
-   `const API_BASE = 'https://ssyc-api.onrender.com';`
+1. Deploy `server/` to Render as above (backend only needs the `server/`
+   folder + `package.json`).
+2. Netlify Dashboard → Add new site → Import an existing project → connect
+   your GitHub repo. Netlify reads `netlify.toml` automatically and deploys
+   the `client/` folder as a static site — no manual build settings needed.
+3. Open `netlify.toml` and replace `REPLACE-WITH-YOUR-RENDER-URL` with your
+   actual Render backend URL, commit, and push — this makes `/api/*` calls
+   from the frontend proxy through to your backend automatically.
+4. On the backend (Render), set `CLIENT_URL` to your Netlify URL (needed for
+   CORS and for Stripe's success/cancel redirect URLs).
 
 ### Stripe/PayPal webhook URL in production
 After deploying, update your Stripe webhook endpoint (Dashboard → Developers
@@ -130,13 +159,13 @@ After deploying, update your Stripe webhook endpoint (Dashboard → Developers
 https://<your-backend-domain>/api/support/webhook
 ```
 
-## 5. Admin dashboard
+## 6. Admin dashboard
 
 Visit `/admin-login.html`, log in with the `ADMIN_EMAIL` / `ADMIN_PASSWORD`
 you set in `.env` (after running `npm run seed:admin`), and you'll see all
 RSVPs, newsletter subscribers, and donation/subscription records.
 
-## 6. Notes & next steps
+## 7. Notes & next steps
 
 - Replace every `TODO:` comment in the code with real values (WhatsApp
   invite link, Stripe/PayPal/Mailchimp keys, PayPal Plan IDs for

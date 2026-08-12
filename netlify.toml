@@ -1,0 +1,23 @@
+# Netlify config — deploys the client/ folder as a static site.
+#
+# Usage: Netlify Dashboard → Add new site → Import from GitHub → select this
+# repo. Netlify will read this file automatically (no manual build settings
+# needed).
+#
+# IMPORTANT: This setup assumes the backend (server/) is deployed separately
+# on Render (see render.yaml / README.md "Option B — Split frontend/backend").
+# Replace REPLACE-WITH-YOUR-RENDER-URL below with your real Render backend
+# URL once it's deployed, so the frontend's API calls get proxied correctly.
+
+[build]
+  base = "client"
+  publish = "client"
+  command = "echo 'Static site — no build step required'"
+
+# Proxy API calls made from the frontend (fetch('/api/...')) straight through
+# to the Render backend, so client/js/*.js doesn't need any code changes.
+[[redirects]]
+  from = "/api/*"
+  to = "https://REPLACE-WITH-YOUR-RENDER-URL.onrender.com/api/:splat"
+  status = 200
+  force = true
