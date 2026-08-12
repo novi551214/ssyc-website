@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Login — SSYC</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="logo"><span class="logo-mark">SS</span> SSYC</a>
+    <nav class="nav-links">
+      <a href="index.html">Home</a>
+    </nav>
+  </div>
+</header>
+
+<div class="auth-wrap">
+  <div class="card auth-card">
+    <span class="eyebrow">Admin</span>
+    <h2 style="margin-bottom:22px;">Log in to the dashboard</h2>
+    <form id="adminLoginForm">
+      <div class="form-group"><label>Email</label><input type="email" name="email" required></div>
+      <div class="form-group"><label>Password</label><input type="password" name="password" required></div>
+      <button type="submit" class="btn btn-primary btn-block">Log In</button>
+      <div class="form-msg"></div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const btn = form.querySelector('button[type="submit"]');
+  const msgEl = form.querySelector('.form-msg');
+  const payload = {
+    email: form.email.value.trim(),
+    password: form.password.value
+  };
+
+  btn.disabled = true;
+  btn.textContent = 'Logging in...';
+  msgEl.style.display = 'none';
+
+  try {
+    const res = await fetch(`${window.location.origin}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (res.ok) {
+      window.location.href = 'admin-dashboard.html';
+    } else {
+      msgEl.textContent = data.message || 'Invalid credentials.';
+      msgEl.className = 'form-msg error';
+      msgEl.style.display = 'block';
+    }
+  } catch (err) {
+    msgEl.textContent = 'Network error — please try again.';
+    msgEl.className = 'form-msg error';
+    msgEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Log In';
+  }
+});
+</script>
+</body>
+</html>

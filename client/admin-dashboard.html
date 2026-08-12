@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard — SSYC</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body style="background:var(--color-bg);">
+
+<header class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="logo"><span class="logo-mark">SS</span> SSYC Admin</a>
+    <nav class="nav-links">
+      <a href="index.html">View Site</a>
+    </nav>
+    <button id="logoutBtn" class="btn btn-secondary">Log Out</button>
+  </div>
+</header>
+
+<div class="container" style="padding:48px 24px;">
+  <div class="admin-topbar">
+    <div>
+      <span class="eyebrow">Dashboard</span>
+      <h1 class="section-title" style="font-size:30px;">Welcome back<span id="adminName"></span></h1>
+    </div>
+  </div>
+
+  <div class="grid grid-3" style="margin-bottom:44px;">
+    <div class="card stat-card"><div class="stat-num" id="statRsvps">—</div><div>Total RSVPs</div></div>
+    <div class="card stat-card"><div class="stat-num" id="statSubscribers">—</div><div>Newsletter Subscribers</div></div>
+    <div class="card stat-card"><div class="stat-num" id="statTransactions">—</div><div>Donations / Subscriptions</div></div>
+  </div>
+
+  <h3 style="margin-bottom:14px;">Recent RSVPs</h3>
+  <div class="table-wrap" style="margin-bottom:44px;">
+    <table>
+      <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Event</th><th>Date</th></tr></thead>
+      <tbody id="rsvpTableBody"><tr><td colspan="5">Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-bottom:14px;">Newsletter Subscribers</h3>
+  <div class="table-wrap" style="margin-bottom:44px;">
+    <table>
+      <thead><tr><th>Email</th><th>Subscribed On</th></tr></thead>
+      <tbody id="subscriberTableBody"><tr><td colspan="2">Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-bottom:14px;">Donations & Subscriptions</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Type</th><th>Tier / Amount</th><th>Email</th><th>Provider</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody id="transactionTableBody"><tr><td colspan="6">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const API_BASE = window.location.origin;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const ok = await checkAuth();
+  if (!ok) { window.location.href = 'admin-login.html'; return; }
+  loadRsvps();
+  loadSubscribers();
+  loadTransactions();
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST', credentials: 'include' });
+  window.location.href = 'admin-login.html';
+});
+
+async function checkAuth() {
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' });
+    if (!res.ok) return false;
+    const data = await res.json();
+    document.getElementById('adminName').textContent = data.email ? `, ${data.email}` : '';
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function loadRsvps() {
+  const res = await fetch(`${API_BASE}/api/admin/rsvps`, { credentials: 'include' });
+  const data = await res.json();
+  const body = document.getElementById('rsvpTableBody');
+  document.getElementById('statRsvps').textContent = data.length;
+  body.innerHTML = data.length ? data.map(r => `
+    <tr><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.email)}</td><td>${escapeHtml(r.phone)}</td><td>${escapeHtml(r.eventTitle)}</td><td>${new Date(r.createdAt).toLocaleString()}</td></tr>
+  `).join('') : '<tr><td colspan="5">No RSVPs yet.</td></tr>';
+}
+
+async function loadSubscribers() {
+  const res = await fetch(`${API_BASE}/api/admin/subscribers`, { credentials: 'include' });
+  const data = await res.json();
+  const body = document.getElementById('subscriberTableBody');
+  document.getElementById('statSubscribers').textContent = data.length;
+  body.innerHTML = data.length ? data.map(s => `
+    <tr><td>${escapeHtml(s.email)}</td><td>${new Date(s.createdAt).toLocaleString()}</td></tr>
+  `).join('') : '<tr><td colspan="2">No subscribers yet.</td></tr>';
+}
+
+async function loadTransactions() {
+  const res = await fetch(`${API_BASE}/api/admin/transactions`, { credentials: 'include' });
+  const data = await res.json();
+  const body = document.getElementById('transactionTableBody');
+  document.getElementById('statTransactions').textContent = data.length;
+  body.innerHTML = data.length ? data.map(t => `
+    <tr><td>${escapeHtml(t.type)}</td><td>${t.tier ? escapeHtml(t.tier) : '$' + t.amount}</td><td>${escapeHtml(t.email || '—')}</td><td>${escapeHtml(t.provider)}</td><td>${escapeHtml(t.status)}</td><td>${new Date(t.createdAt).toLocaleString()}</td></tr>
+  `).join('') : '<tr><td colspan="6">No transactions yet.</td></tr>';
+}
+
+function escapeHtml(str) {
+  if (str === undefined || str === null) return '';
+  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+</script>
+</body>
+</html>
