@@ -1,6 +1,6 @@
 // ==========================================================================
-// support.js — Support Us page: monthly tiers (Stripe subscriptions),
-// one-time donations (Stripe Checkout), and PayPal buttons for both.
+// support.js — monthly tiers through Stripe and one-time donations through
+// Stripe Checkout or a server-created/captured PayPal order.
 // ==========================================================================
 
 let PUBLIC_CONFIG = null; // { stripePublishableKey, paypalClientId }
@@ -135,12 +135,6 @@ function loadPayPalSdkAndRenderButtons() {
     script.onload = renderOneTimePayPalButton;
     document.body.appendChild(script);
 
-    // Subscription PayPal buttons (requires vault=true + separate plan IDs set up
-    // in the PayPal dashboard — see server/routes/support.js for where those plug in)
-    const subScript = document.createElement('script');
-    subScript.src = `https://www.paypal.com/sdk/js?client-id=${PUBLIC_CONFIG.paypalClientId}&vault=true&intent=subscription`;
-    subScript.onload = renderSubscriptionPayPalButtons;
-    document.body.appendChild(subScript);
   }, 150);
 }
 
@@ -175,35 +169,4 @@ function renderOneTimePayPalButton() {
       alert('Something went wrong with PayPal. Please try again.');
     }
   }).render('#paypal-donate-button');
-}
-
-function renderSubscriptionPayPalButtons() {
-  // TODO: Replace these with real PayPal Plan IDs created in your PayPal
-  // dashboard (Pay & Get Paid > Subscriptions) for each tier.
-  const planIds = {
-    friend: 'P-TODO-FRIEND-PLAN-ID',
-    supporter: 'P-TODO-SUPPORTER-PLAN-ID',
-    patron: 'P-TODO-PATRON-PLAN-ID',
-  };
-
-  document.querySelectorAll('.paypal-sub-button').forEach(container => {
-    const tier = container.dataset.tier;
-    if (!window.paypal || !planIds[tier]) return;
-
-    window.paypal.Buttons({
-      style: { layout: 'horizontal', color: 'blue', shape: 'pill', label: 'subscribe', height: 40 },
-      createSubscription: (data, actions) => {
-        return actions.subscription.create({ plan_id: planIds[tier] });
-      },
-      onApprove: async (data) => {
-        // Notify our backend so we can log the subscription
-        await fetch(`${window.location.origin}/api/support/paypal/subscription-confirmed`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ subscriptionID: data.subscriptionID, tier })
-        });
-        alert('Subscription started — thank you for supporting SSYC!');
-      }
-    }).render(container);
-  });
 }

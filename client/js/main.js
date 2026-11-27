@@ -5,6 +5,9 @@
 const API_BASE = window.location.origin; // backend + frontend served from same origin
 
 document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('#year').forEach((element) => {
+    element.textContent = new Date().getFullYear();
+  });
   initNavToggle();
   initFadeIns();
   initNewsletterPopup();

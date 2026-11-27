@@ -31,45 +31,6 @@
   </div>
 </div>
 
-<script>
-document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const form = e.target;
-  const btn = form.querySelector('button[type="submit"]');
-  const msgEl = form.querySelector('.form-msg');
-  const payload = {
-    email: form.email.value.trim(),
-    password: form.password.value
-  };
-
-  btn.disabled = true;
-  btn.textContent = 'Logging in...';
-  msgEl.style.display = 'none';
-
-  try {
-    const res = await fetch(`${window.location.origin}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-    if (res.ok) {
-      window.location.href = 'admin-dashboard.html';
-    } else {
-      msgEl.textContent = data.message || 'Invalid credentials.';
-      msgEl.className = 'form-msg error';
-      msgEl.style.display = 'block';
-    }
-  } catch (err) {
-    msgEl.textContent = 'Network error — please try again.';
-    msgEl.className = 'form-msg error';
-    msgEl.style.display = 'block';
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Log In';
-  }
-});
-</script>
+<script src="js/admin-login.js"></script>
 </body>
 </html>

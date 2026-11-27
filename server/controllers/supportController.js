@@ -14,6 +14,20 @@ const TIER_PRICE_ENV = {
   supporter: 'STRIPE_PRICE_SUPPORTER',
   patron: 'STRIPE_PRICE_PATRON',
 };
+function normalizeAmount(value) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount) || amount < 1 || amount > 10000) return null;
+  return Math.round(amount * 100) / 100;
+}
+
+async function recordTransaction(providerRefId, values) {
+  if (!providerRefId) throw new Error('Payment provider reference is required.');
+  return Transaction.findOneAndUpdate(
+    { provider: values.provider, providerRefId },
+    { $set: values, $setOnInsert: { providerRefId } },
+    { upsert: true, new: true, runValidators: true }
+  );
+}
 
 /* GET /api/support/config — publishable/public keys only, never secrets */
 exports.getPublicConfig = (req, res) => {
@@ -53,7 +67,6 @@ exports.createSubscriptionSession = async (req, res) => {
     res.status(500).json({ message: 'Could not start checkout. Please try again.' });
   }
 };
-
 /* POST /api/support/create-donation-session  { amount } */
 exports.createDonationSession = async (req, res) => {
   try {
@@ -63,9 +76,9 @@ exports.createDonationSession = async (req, res) => {
     }
 
     const { amount } = req.body;
-    const amountNum = Number(amount);
-    if (!amountNum || amountNum <= 0) {
-      return res.status(400).json({ message: 'Please provide a valid donation amount.' });
+    const amountNum = normalizeAmount(amount);
+    if (amountNum === null) {
+      return res.status(400).json({ message: 'Donation amount must be between $1 and $10,000.' });
     }
 
     const session = await stripe.checkout.sessions.create({
@@ -114,7 +127,7 @@ exports.stripeWebhook = async (req, res) => {
         const customerEmail = session.customer_details?.email || null;
 
         if (session.mode === 'subscription') {
-          await Transaction.create({
+          await recordTransaction(session.subscription, {
             type: 'subscription',
             tier: session.metadata?.tier || null,
             email: customerEmail,
@@ -123,7 +136,7 @@ exports.stripeWebhook = async (req, res) => {
             status: 'active',
           });
         } else {
-          await Transaction.create({
+          await recordTransaction(session.id, {
             type: 'donation',
             amount: Number(session.metadata?.amount) || (session.amount_total ? session.amount_total / 100 : null),
             email: customerEmail,
@@ -159,10 +172,11 @@ exports.stripeWebhook = async (req, res) => {
 exports.paypalCreateOrder = async (req, res) => {
   try {
     const { amount } = req.body;
-    if (!amount || Number(amount) <= 0) {
-      return res.status(400).json({ message: 'Please provide a valid donation amount.' });
+    const amountNum = normalizeAmount(amount);
+    if (amountNum === null) {
+      return res.status(400).json({ message: 'Donation amount must be between $1 and $10,000.' });
     }
-    const order = await paypal.createOrder(amount);
+    const order = await paypal.createOrder(amountNum);
     res.json(order);
   } catch (err) {
     console.error('PayPal create order error:', err.message);
@@ -176,13 +190,16 @@ exports.paypalCaptureOrder = async (req, res) => {
     const { orderID } = req.body;
     if (!orderID) return res.status(400).json({ message: 'orderID is required.' });
 
+    const existing = await Transaction.findOne({ provider: 'paypal', providerRefId: orderID });
+    if (existing) return res.status(409).json({ message: 'This PayPal order was already recorded.' });
+
     const capture = await paypal.captureOrder(orderID);
     const payerEmail = capture.payer?.email_address || null;
     const amount = Number(
       capture.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.value
     ) || null;
 
-    await Transaction.create({
+    await recordTransaction(orderID, {
       type: 'donation',
       amount,
       email: payerEmail,
@@ -195,28 +212,5 @@ exports.paypalCaptureOrder = async (req, res) => {
   } catch (err) {
     console.error('PayPal capture order error:', err.message);
     res.status(503).json({ message: 'Could not capture PayPal payment.' });
-  }
-};
-
-/* POST /api/support/paypal/subscription-confirmed  { subscriptionID, tier } */
-exports.paypalSubscriptionConfirmed = async (req, res) => {
-  try {
-    const { subscriptionID, tier } = req.body;
-    if (!subscriptionID || !tier) {
-      return res.status(400).json({ message: 'subscriptionID and tier are required.' });
-    }
-
-    await Transaction.create({
-      type: 'subscription',
-      tier,
-      provider: 'paypal',
-      providerRefId: subscriptionID,
-      status: 'active',
-    });
-
-    res.json({ message: 'Subscription logged.' });
-  } catch (err) {
-    console.error('PayPal subscription log error:', err);
-    res.status(500).json({ message: 'Could not log subscription.' });
   }
 };

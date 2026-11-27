@@ -6,10 +6,13 @@
   "scripts": {
     "start": "node server/server.js",
     "dev": "nodemon server/server.js",
-    "seed:admin": "node server/config/seedAdmin.js"
+    "seed:admin": "node server/config/seedAdmin.js",
+    "check": "node scripts/check.mjs",
+    "prepublish:check": "node scripts/prepublish-check.mjs"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "connect-mongo": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
@@ -26,6 +29,6 @@
     "nodemon": "^3.1.4"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.8.0"
   }
 }
