@@ -58,68 +58,6 @@
   </div>
 </div>
 
-<script>
-const API_BASE = window.location.origin;
-
-document.addEventListener('DOMContentLoaded', async () => {
-  const ok = await checkAuth();
-  if (!ok) { window.location.href = 'admin-login.html'; return; }
-  loadRsvps();
-  loadSubscribers();
-  loadTransactions();
-});
-
-document.getElementById('logoutBtn').addEventListener('click', async () => {
-  await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST', credentials: 'include' });
-  window.location.href = 'admin-login.html';
-});
-
-async function checkAuth() {
-  try {
-    const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' });
-    if (!res.ok) return false;
-    const data = await res.json();
-    document.getElementById('adminName').textContent = data.email ? `, ${data.email}` : '';
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function loadRsvps() {
-  const res = await fetch(`${API_BASE}/api/admin/rsvps`, { credentials: 'include' });
-  const data = await res.json();
-  const body = document.getElementById('rsvpTableBody');
-  document.getElementById('statRsvps').textContent = data.length;
-  body.innerHTML = data.length ? data.map(r => `
-    <tr><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.email)}</td><td>${escapeHtml(r.phone)}</td><td>${escapeHtml(r.eventTitle)}</td><td>${new Date(r.createdAt).toLocaleString()}</td></tr>
-  `).join('') : '<tr><td colspan="5">No RSVPs yet.</td></tr>';
-}
-
-async function loadSubscribers() {
-  const res = await fetch(`${API_BASE}/api/admin/subscribers`, { credentials: 'include' });
-  const data = await res.json();
-  const body = document.getElementById('subscriberTableBody');
-  document.getElementById('statSubscribers').textContent = data.length;
-  body.innerHTML = data.length ? data.map(s => `
-    <tr><td>${escapeHtml(s.email)}</td><td>${new Date(s.createdAt).toLocaleString()}</td></tr>
-  `).join('') : '<tr><td colspan="2">No subscribers yet.</td></tr>';
-}
-
-async function loadTransactions() {
-  const res = await fetch(`${API_BASE}/api/admin/transactions`, { credentials: 'include' });
-  const data = await res.json();
-  const body = document.getElementById('transactionTableBody');
-  document.getElementById('statTransactions').textContent = data.length;
-  body.innerHTML = data.length ? data.map(t => `
-    <tr><td>${escapeHtml(t.type)}</td><td>${t.tier ? escapeHtml(t.tier) : '$' + t.amount}</td><td>${escapeHtml(t.email || '—')}</td><td>${escapeHtml(t.provider)}</td><td>${escapeHtml(t.status)}</td><td>${new Date(t.createdAt).toLocaleString()}</td></tr>
-  `).join('') : '<tr><td colspan="6">No transactions yet.</td></tr>';
-}
-
-function escapeHtml(str) {
-  if (str === undefined || str === null) return '';
-  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-}
-</script>
+<script src="js/admin-dashboard.js"></script>
 </body>
 </html>

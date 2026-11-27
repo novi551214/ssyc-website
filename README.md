@@ -1,7 +1,7 @@
 # Somerset Shia Youth Collective (SSYC) — Website
 
 A full-stack community website: static HTML/CSS/JS frontend + Node.js/Express
-backend + MongoDB, with Stripe & PayPal (sandbox) payments, Mailchimp
+backend + MongoDB, with Stripe and one-time PayPal sandbox payments, Mailchimp
 newsletter sync, RSVP collection, a contact form, and a simple admin
 dashboard.
 
@@ -33,7 +33,7 @@ ssyc/
 ## 2. Local setup
 
 ```bash
-# 1. Install dependencies
+# 1. Install dependencies (generate and review a lockfile before deployment)
 npm install
 
 # 2. Create your real .env file from the template
@@ -79,6 +79,19 @@ CVC, and any ZIP. See [Stripe test cards](https://docs.stripe.com/testing).
 ### Testing PayPal payments (sandbox)
 Log in with a [PayPal sandbox buyer account](https://developer.paypal.com/dashboard/accounts)
 when the PayPal button opens.
+
+PayPal subscriptions are intentionally disabled. The earlier prototype accepted an unverified browser callback as proof of a subscription. Monthly tiers now use Stripe Checkout only; one-time PayPal donations use server-created and server-captured orders.
+
+## Security and verification
+
+```bash
+npm run check
+npm run prepublish:check
+```
+
+`npm run check` performs JavaScript syntax and CSP inline-script checks. The prepublication check scans publishable paths for secret/private-data patterns and deliberately fails while public placeholder links remain. See `SECURITY.md` for the threat model and production limitations.
+
+No live Stripe, PayPal, Mailchimp, SMTP, MongoDB Atlas, or deployment workflow was verified during the portfolio hardening pass. Do not represent those integrations as production-ready.
 
 ### Webhook testing locally
 ```bash
